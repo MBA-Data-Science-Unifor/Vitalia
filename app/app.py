@@ -22,8 +22,8 @@ if 'messages' not in st.session_state:
     st.session_state.messages = []
 
 # Criação do Historico de Perda
-if 'loss_story' not in st.session_state:
-    st.session_state.loss_story = []
+if 'loss_history' not in st.session_state:
+    st.session_state.loss_history = []
 
 # Validação de qual botão executar
 if 'acao_ativa' not in st.session_state:
@@ -95,7 +95,6 @@ elif botao_retreinar:
 
 # Logica de Treinar
 if st.session_state.acao_ativa == 'botao_treinar':
-
     try:
         if arquivo_principal is None:
             # Criação de uma mensagem de alerta
@@ -144,6 +143,8 @@ elif st.session_state.acao_ativa == 'botao_retreinar':
 # Abas
 aba_chat, aba_treinamento, aba_analise = st.tabs(['💬 Chat', '📊 Treinamento', '📈 Análise'])
 
+
+# Chat
 with aba_chat:
     st.header("💬 Discussão com o Agente")
 
@@ -188,9 +189,18 @@ with aba_chat:
             st.rerun()
 
 
-
+# Análise
 with aba_analise:
     st.header("📈 Análise do Histórico de Perda")
 
     if st.session_state.loss_history == []:
         st.warning("Ausência de Histórico de Perda")
+
+
+# aba_treinamento
+with aba_treinamento:
+    st.header("📊 Treinamento")
+
+    # Avalia se o modelo está pronto para responder
+    if st.session_state.model_ready == False:
+        st.warning("Treine Primeiro")
