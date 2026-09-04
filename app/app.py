@@ -1,17 +1,18 @@
+# ============ Importação de Bibliotecas ============
 import streamlit as st
 import time
 
+# ============ Configuração Inicial ============
 st.set_page_config(
     page_title="Comparativo de Assistentes de IA (Saude)",
     layout="wide"
 )
 
-# Definição do Título e do Subtítulo
 st.title("Vital AI (Vital)")
 st.write("Avalie os Modelos")
 
 
-# Criação de Variáveis de Sessão do StreamLit
+# ============ Inicialização dos Estados ============
 
 # Preparação do Modelo
 if 'model_ready' not in st.session_state:
@@ -31,61 +32,49 @@ if 'acao_ativa' not in st.session_state:
 
 
 
-# Menu de Opções 
-barra_opcoes = st.sidebar
-
-with barra_opcoes:
-
-    barra_opcoes.title('Menu Principal')
-    barra_opcoes.header("Parâmetros")
+# ============ SideBar ============
+with st.sidebar:
+    st.title('Menu Principal')
+    st.header("Parâmetros")
 
     # Recuperação do arquivo principal
-    arquivo_principal = barra_opcoes.file_uploader("Escolha sua base de dados", type='jsonl')
+    arquivo_principal = st.file_uploader("Escolha sua base de dados", type='jsonl')
 
-    # Definição da Quantidade de Épocas
-    epochs = barra_opcoes.number_input(
+    epochs = st.number_input(
         label="Defina a Quantidade de Épocas", 
-        min_value=1.0,
-        max_value=100.0,
-        value=1.0,
-        step=1.0
+        min_value=1.0, max_value=100.0, value=1.0, step=1.0
     )
 
-    learning_rate = barra_opcoes.number_input(
+    learning_rate = st.number_input(
         "Defina a Taxa de Aprendizado",
-        min_value=0.1,
-        max_value=100.0,
-        step=0.1,
-        value=0.1,
-        format="%.2f"
+        min_value=0.1, max_value=100.0, value=0.1, step=0.1, format="%.2f"
     )
 
-    batch_size = barra_opcoes.selectbox(
+    batch_size = st.selectbox(
         "Defina a Quantidade de Lotes",
         [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     )
 
-    temperature_slider = barra_opcoes.slider(
+    temperature_slider = st.slider(
         label='Defina a Temperatura do Modelo',
-        min_value=0.1,
-        max_value=100.0,
-        step=0.1,
-        format="%.2f"
+        min_value=0.1, max_value=100.0, value=0.5, step=0.1, format="%.2f"
     )
 
-    penality_slider = barra_opcoes.slider(
+    penality_slider = st.slider(
         label='Defina a Penalidade do Modelo',
-        min_value=0.0,
-        max_value=100.0,
-        step=0.1,
-        format="%.2f"
+        min_value=0.1, max_value=100.0, value=0.1, step=0.1, format="%.2f"
     )
 
-    botao_treinar = barra_opcoes.button("Treinar")
-    botao_retreinar = barra_opcoes.button("Re-Treinar")
+    col1, col2 = st.columns(2)
+    with col1:
+        botao_treinar = st.button("Treinar", use_container_width=True)
+    with col2:
+        botao_retreinar = st.button("Re-Treinar", use_container_width=True)
 
 
-# Validação do Treinamento
+
+
+# ============ Validação do Treinamento ============
 if botao_treinar:
     st.session_state.acao_ativa = 'botao_treinar' # persistência na escolha do botão treinar
 elif botao_retreinar:
@@ -93,12 +82,13 @@ elif botao_retreinar:
 
 
 
-# Logica de Treinar
+
+# ============ Logica do Botão de Treinamento ============
 if st.session_state.acao_ativa == 'botao_treinar':
     try:
         if arquivo_principal is None:
             # Criação de uma mensagem de alerta
-            placeholder = barra_opcoes.empty()
+            placeholder = st.sidebar.empty()
             placeholder.info("Precisa de um arquivo para realizar o treinamento")
 
             # Intervalo de tempo para retirar o aviso prévio
@@ -109,42 +99,57 @@ if st.session_state.acao_ativa == 'botao_treinar':
         else:
             # train_model() # deve capturar o loss story
             # load_or_init_model() 
-            st.session_state.model_ready=True
 
+            # Teste Não Oficial
+            with st.spinner("Treinando..."):
+                simulacao_loss = [0.33, 0.55, 0.81, 0.2]
+                st.session_state.loss_history  = simulacao_loss
+                st.session_state.model_ready=True
+
+            st.sidebar.success("Treinamento realizado com sucesso!")
+            
     except Exception as e:
-        barra_opcoes.error(f'Erro durante o treinamento: {str(e)}')
+        st.sidebar.error(f'Erro durante o treinamento: {str(e)}')
         st.session_state.model_ready=False
 
     st.session_state.acao_ativa = ''
+    print(f'Ação Ativa: {st.session_state.acao_ativa}')
 
-# Logica de Re-Treinar
+
+# ============ Logica do botão de Re-Treinamento ============
 elif st.session_state.acao_ativa == 'botao_retreinar':
     st.session_state.model_ready=False
 
     # Avaliar se o arquivo existe
     if arquivo_principal is None:
         # Criação de uma mensagem de alerta
-        placeholder = barra_opcoes.empty()
+        placeholder = st.sidebar.empty()
         placeholder.info("Precisa de um arquivo para realizar o re-treinamento")
 
         # Intervalo de tempo para retirar o aviso prévio
         time.sleep(5)
-
         # Remoção da mensagem de alerta
         placeholder.empty()
     else:
-        st.session_state.model_ready=True
+
+        # Teste Não Oficial
+        with st.spinner("Treinando..."):
+            simulacao_loss = [0.8, 0.1, 0.9, 0.6]
+            st.session_state.loss_history = simulacao_loss
+            st.session_state.model_ready=True
+
+        st.sidebar.success("Re-Treinamento realizado com sucesso!")
+        time.sleep(3)
 
     st.session_state.acao_ativa = ''
 
 
 
 
-# Abas
+# ============ Abas ============
 aba_chat, aba_treinamento, aba_analise = st.tabs(['💬 Chat', '📊 Treinamento', '📈 Análise'])
 
-
-# Chat
+# ============ Chat ============
 with aba_chat:
     st.header("💬 Discussão com o Agente")
 
@@ -161,12 +166,11 @@ with aba_chat:
     if st.session_state.model_ready == False:
         st.warning("Treine Primeiro")
     else:
-
         # Criação de um Container de mensagens
-        message_container = st.container(height=200, autoscroll=True)
+        chat_container = st.container(height=200, autoscroll=True)
         
         # Exibição do Histórico de Mensagens
-        with message_container:
+        with chat_container:
             for msg in (st.session_state.messages):
                 with st.chat_message(msg["role"]):
                     st.markdown(msg["content"])
@@ -178,9 +182,7 @@ with aba_chat:
             st.session_state.messages.append({'role': 'user', 'content': prompt})
 
             # Salva a resposta do usuário
-            resposta = "A resposta é: "
-            print(f"Temperatua Atual: {temperature_slider}")
-            print(f'Penalidade: {penality_slider}')
+            resposta = f"Reposta do Assistente ({temperature_slider} {penality_slider}): "
 
             # resposta = generate_response(temperatua)
             st.session_state.messages.append({'role': 'assistant', 'content': resposta})
@@ -189,18 +191,23 @@ with aba_chat:
             st.rerun()
 
 
-# Análise
+# ============ Análise ============
 with aba_analise:
     st.header("📈 Análise do Histórico de Perda")
 
-    if st.session_state.loss_history == []:
-        st.warning("Ausência de Histórico de Perda")
+    if st.session_state.loss_history:
+        # Exebição de um gráfico de histórico de perda
+        st.line_chart(st.session_state.loss_history)
+    else:
+        st.warning("Nenhum Histórico de Perda disponível. Treine novamente o modelo")
 
 
-# aba_treinamento
+# ============ Treinamento ============
 with aba_treinamento:
     st.header("📊 Treinamento")
 
     # Avalia se o modelo está pronto para responder
     if st.session_state.model_ready == False:
-        st.warning("Treine Primeiro")
+        st.info("Treine Primeiro")
+    else:
+        st.info("TREINO")
