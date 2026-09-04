@@ -35,6 +35,7 @@ if 'acao_ativa' not in st.session_state:
 barra_opcoes = st.sidebar
 
 with barra_opcoes:
+
     barra_opcoes.title('Menu Principal')
     barra_opcoes.header("Parâmetros")
 
@@ -44,7 +45,7 @@ with barra_opcoes:
     # Definição da Quantidade de Épocas
     epochs = barra_opcoes.number_input(
         label="Defina a Quantidade de Épocas", 
-        min_value=0.0,
+        min_value=1.0,
         max_value=100.0,
         value=1.0,
         step=1.0
@@ -52,7 +53,7 @@ with barra_opcoes:
 
     learning_rate = barra_opcoes.number_input(
         "Defina a Taxa de Aprendizado",
-        min_value=0.0,
+        min_value=0.1,
         max_value=100.0,
         step=0.1,
         value=0.1,
@@ -66,7 +67,7 @@ with barra_opcoes:
 
     temperature_slider = barra_opcoes.slider(
         label='Defina a Temperatura do Modelo',
-        min_value=0.0,
+        min_value=0.1,
         max_value=100.0,
         step=0.1,
         format="%.2f"
@@ -107,7 +108,8 @@ if st.session_state.acao_ativa == 'botao_treinar':
             # Remoção da mensagem de alerta
             placeholder.empty()
         else:
-            # train_model()
+            # train_model() # deve capturar o loss story
+            # load_or_init_model() 
             st.session_state.model_ready=True
 
     except Exception as e:
@@ -143,7 +145,7 @@ elif st.session_state.acao_ativa == 'botao_retreinar':
 aba_chat, aba_treinamento, aba_analise = st.tabs(['💬 Chat', '📊 Treinamento', '📈 Análise'])
 
 with aba_chat:
-    st.header("Discussão com o Assistente")
+    st.header("💬 Discussão com o Agente")
 
     # Definição do Layout Padrão do ChatBot
     col1, col2 = st.columns([6,1])
@@ -154,41 +156,41 @@ with aba_chat:
             st.session_state.messages = [] # Limpeza do Histórico
             st.rerun() # Recarregamento da página após a limpeza
 
-
     # Avalia se o modelo está pronto para responder
     if st.session_state.model_ready == False:
-        st.warning("O Modelo não está pronto para responder por favor adquira os dados e realize o treinamento")
+        st.warning("Treine Primeiro")
     else:
-        # Criação do container de mensagens
-        message_container = st.empty()
 
+        # Criação de um Container de mensagens
+        message_container = st.container(height=200, autoscroll=True)
+        
         # Exibição do Histórico de Mensagens
-        with message_container.container():
-            for msg in st.session_state.messages:
-                with st.chat_message(msg['role']):
-                    st.markdown(msg['content'])
-
+        with message_container:
+            for msg in (st.session_state.messages):
+                with st.chat_message(msg["role"]):
+                    st.markdown(msg["content"])
 
         # Execução do Prompt de Comando
         if prompt := st.chat_input("Escreva Sua Pergunta"):
 
-            # Exibe e salva a pergunta do usuário
+            # Salva a pergunta do usuário
             st.session_state.messages.append({'role': 'user', 'content': prompt})
 
-            # Atualização do container com novas mensagens
-            with message_container.container():
-                for msg in st.session_state.messages:
-                    with st.chat_message(msg['role']):
-                        st.markdown(msg['content'])
-
-
-            # Exibe e salva a resposta do usuário
+            # Salva a resposta do usuário
             resposta = "A resposta é: "
+            print(f"Temperatua Atual: {temperature_slider}")
+            print(f'Penalidade: {penality_slider}')
+
+            # resposta = generate_response(temperatua)
             st.session_state.messages.append({'role': 'assistant', 'content': resposta})
 
-            # Atualizar novamente o container
-            with message_container.container():
-                for msg in st.session_state.messages:
-                    with st.chat_message(msg['role']):
-                        st.markdown(msg['content'])
+            # Atualiza a lista
+            st.rerun()
 
+
+
+with aba_analise:
+    st.header("📈 Análise do Histórico de Perda")
+
+    if st.session_state.loss_history == []:
+        st.warning("Ausência de Histórico de Perda")
