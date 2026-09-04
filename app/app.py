@@ -5,6 +5,9 @@ st.set_page_config(layout="wide")
 st.title("Vital AI (Vital)")
 st.write("Avalie os Modelos")
 
+model_ready, messages, loss_story = False, [], []
+
+
 
 if 'acao_ativa' not in st.session_state:
     st.session_state.acao_ativa = ''    
@@ -31,6 +34,11 @@ with st.sidebar:
         step=0.1,
         value=0.1,
         format="%.2f"
+    )
+
+    batch_size = st.selectbox(
+        "Defina a Quantidade de Lotes",
+        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     )
 
     temperature_slider = st.slider(
@@ -61,9 +69,10 @@ elif botao_retreinar:
 
 if st.session_state.acao_ativa == 'botao_treinar':
     st.subheader("Treinando")
+    print(f'BatchSize = {batch_size}')
     st.session_state.acao_ativa = ''
-
 
 elif st.session_state.acao_ativa == 'botao_retreinar':
     st.subheader("Re-Treinando")
+    print(f'BatchSize ReTreinamento = {batch_size}')
     st.session_state.acao_ativa = ''
