@@ -72,15 +72,11 @@ with st.sidebar:
         botao_retreinar = st.button("Re-Treinar", use_container_width=True)
 
 
-
-
 # ============ Validação do Treinamento ============
 if botao_treinar:
     st.session_state.acao_ativa = 'botao_treinar' # persistência na escolha do botão treinar
 elif botao_retreinar:
     st.session_state.acao_ativa = 'botao_retreinar' # persistência na escolha do botão re-treinar
-
-
 
 
 # ============ Logica do Botão de Treinamento ============
@@ -92,7 +88,7 @@ if st.session_state.acao_ativa == 'botao_treinar':
             placeholder.info("Precisa de um arquivo para realizar o treinamento")
 
             # Intervalo de tempo para retirar o aviso prévio
-            time.sleep(5)
+            time.sleep(3)
 
             # Remoção da mensagem de alerta
             placeholder.empty()
@@ -107,7 +103,7 @@ if st.session_state.acao_ativa == 'botao_treinar':
                 st.session_state.model_ready=True
 
             st.sidebar.success("Treinamento realizado com sucesso!")
-            
+
     except Exception as e:
         st.sidebar.error(f'Erro durante o treinamento: {str(e)}')
         st.session_state.model_ready=False
@@ -139,10 +135,8 @@ elif st.session_state.acao_ativa == 'botao_retreinar':
             st.session_state.model_ready=True
 
         st.sidebar.success("Re-Treinamento realizado com sucesso!")
-        time.sleep(3)
 
     st.session_state.acao_ativa = ''
-
 
 
 
