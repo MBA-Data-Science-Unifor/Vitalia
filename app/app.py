@@ -196,6 +196,7 @@ with aba_analise:
         st.warning("Nenhum Histórico de Perda disponível. Treine novamente o modelo")
 
 
+
 # ============ Treinamento ============
 with aba_treinamento:
     st.header("📊 Treinamento")
