@@ -1,6 +1,7 @@
 # ============ Importação de Bibliotecas ============
 import streamlit as st
 import time
+from app_functions import train_new_model, load_dataset, continue_training_model
 
 # ============ Configuração Inicial ============
 st.set_page_config(
@@ -38,7 +39,7 @@ with st.sidebar:
     st.header("Parâmetros")
 
     # Recuperação do arquivo principal
-    arquivo_principal = st.file_uploader("Escolha sua base de dados", type='jsonl')
+    arquivo_principal = load_dataset(st)
 
     epochs = st.number_input(
         label="Defina a Quantidade de Épocas", 
@@ -98,8 +99,18 @@ if st.session_state.acao_ativa == 'botao_treinar':
 
             # Teste Não Oficial
             with st.spinner("Treinando..."):
-                simulacao_loss = [0.33, 0.55, 0.81, 0.2]
-                st.session_state.loss_history  = simulacao_loss
+                model, loss_story = train_new_model(
+                    arquivo_principal,
+                    epochs=epochs,
+                    learning_rate=learning_rate,
+                    batch_size=batch_size,
+                    temperature=temperature_slider,
+                    penalty=penality_slider
+                )
+
+                # Atualiza o Modelo e a adição de suas perdas
+                st.session_state.model = model
+                st.session_state.loss_history = loss_story
                 st.session_state.model_ready=True
                 time.sleep(5) 
 
@@ -115,7 +126,7 @@ if st.session_state.acao_ativa == 'botao_treinar':
 # ============ Logica do botão de Re-Treinamento ============
 elif st.session_state.acao_ativa == 'botao_retreinar':
     try:
-        if not st.session_state.get('model_ready', False):
+        if st.session_state.model_ready == False:
             st.sidebar.warning("Nenhum modelo treinado para re-treinar. Use 'Treinar' primeiro.")
 
         elif arquivo_principal is None:
@@ -128,9 +139,22 @@ elif st.session_state.acao_ativa == 'botao_retreinar':
             # Remoção da mensagem de alerta
             placeholder.empty()
         else:
+
+            # Efetuar o Re-Treinamento
             with st.spinner("Re-Treinando..."):
-                simulacao_loss = [0.9, 0.6, 0.33, 0.21]
-                st.session_state.loss_history.extend(simulacao_loss)
+
+                model, loss_story = continue_training_model(
+                    model=st.session_state.model,
+                    dataset=arquivo_principal,
+                    add_epochs=epochs,
+                    learning_rate=learning_rate,
+                    batch_size=batch_size,
+                    temperature=temperature_slider,
+                    penalty=penality_slider
+                )
+
+                st.session_state.model = model
+                st.session_state.loss_history.extend(loss_story)
                 st.session_state.model_ready=True
                 time.sleep(5) 
 
