@@ -1,0 +1,62 @@
+# ==============================
+# CONTROLE DE VERSÃO
+# ==============================
+.git/
+.gitignore
+
+# ==============================
+# PYTHON (CACHE E AMBIENTE VIRTUAL)
+# ==============================
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+env/
+*.egg-info/
+
+# ==============================
+# MODELOS TREINADOS (NÃO ENVIAR PARA A IMAGEM)
+# ==============================
+# O modelo será gerado DENTRO do container durante o treino.
+# Não faz sentido enviar pesos pré-treinados na imagem.
+trained_model/
+*.pt
+*.pth
+*.bin
+*.safetensors
+
+# ==============================
+# ANÁLISES E APRESENTAÇÃO (NÃO NECESSÁRIOS PARA RODAR O APP)
+# ==============================
+# Essas pastas existem apenas na branch 'analysis' e são
+# usadas para documentação, não para execução do código.
+analysis/
+presentation/
+
+# ==============================
+# IDEs E SISTEMA OPERACIONAL
+# ==============================
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# ==============================
+# LOGS E ARQUIVOS TEMPORÁRIOS
+# ==============================
+*.log
+*.tmp
+*.temp
+
+# ==============================
+# AMBIENTE LOCAL (NÃO COPIAR)
+# ==============================
+.env
+.venv
+
+# ==============================
+# NOTEBOOKS E CHECKPOINTS
+# ==============================
+.ipynb_checkpoints/
+*.ipynb
