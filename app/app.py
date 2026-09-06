@@ -41,28 +41,28 @@ with st.sidebar:
     # Recuperação do arquivo principal
     arquivo_principal = load_dataset(st)
 
-    epochs = st.number_input(
+    epochs_input = st.number_input(
         label="Defina a Quantidade de Épocas", 
         min_value=1.0, max_value=100.0, value=1.0, step=1.0
     )
 
-    learning_rate = st.number_input(
+    learning_rate_input = st.number_input(
         "Defina a Taxa de Aprendizado",
         min_value=0.1, max_value=100.0, value=0.1, step=0.1, format="%.2f"
     )
 
-    batch_size = st.selectbox(
+    batch_size_box = st.selectbox(
         "Defina a Quantidade de Lotes",
         [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     )
 
-    temperature_slider = st.slider(
-        label='Defina a Temperatura do Modelo',
+    temperature_input = st.number_input(
+        label='Selecione a Temperatura do Modelo (0.1 - 100.0)',
         min_value=0.1, max_value=100.0, value=0.5, step=0.1, format="%.2f"
     )
 
-    penality_slider = st.slider(
-        label='Defina a Penalidade do Modelo',
+    penality_input = st.number_input(
+        label='Selecione a Penalidade do Modelo (0.1 - 100.0)',
         min_value=0.1, max_value=100.0, value=0.1, step=0.1, format="%.2f"
     )
 
@@ -101,11 +101,11 @@ if st.session_state.acao_ativa == 'botao_treinar':
             with st.spinner("Treinando..."):
                 model, loss_story = train_new_model(
                     arquivo_principal,
-                    epochs=epochs,
-                    learning_rate=learning_rate,
-                    batch_size=batch_size,
-                    temperature=temperature_slider,
-                    penalty=penality_slider
+                    epochs=epochs_input,
+                    learning_rate=learning_rate_input,
+                    batch_size=batch_size_box,
+                    temperature=temperature_input,
+                    penalty=penality_input
                 )
 
                 # Atualiza o Modelo e a adição de suas perdas
@@ -146,11 +146,11 @@ elif st.session_state.acao_ativa == 'botao_retreinar':
                 model, loss_story = continue_training_model(
                     model=st.session_state.model,
                     dataset=arquivo_principal,
-                    add_epochs=epochs,
-                    learning_rate=learning_rate,
-                    batch_size=batch_size,
-                    temperature=temperature_slider,
-                    penalty=penality_slider
+                    add_epochs=epochs_input,
+                    learning_rate=learning_rate_input,
+                    batch_size=batch_size_box,
+                    temperature=temperature_input,
+                    penalty=penality_input
                 )
 
                 st.session_state.model = model
@@ -202,7 +202,7 @@ with aba_chat:
             st.session_state.messages.append({'role': 'user', 'content': prompt})
 
             # Salva a resposta do usuário
-            resposta = f"Reposta do Assistente ({temperature_slider} {penality_slider}): "
+            resposta = f"Reposta do Assistente ({temperature_input} {penality_input}): "
 
             # resposta = generate_response(temperatua)
             st.session_state.messages.append({'role': 'assistant', 'content': resposta})
