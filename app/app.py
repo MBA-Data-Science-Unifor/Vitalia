@@ -112,7 +112,6 @@ if st.session_state.acao_ativa == 'botao_treinar':
                 st.session_state.model = model
                 st.session_state.loss_history = loss_story
                 st.session_state.model_ready=True
-                time.sleep(5) 
 
             st.sidebar.success("Treinamento realizado com sucesso!")
 
@@ -156,7 +155,6 @@ elif st.session_state.acao_ativa == 'botao_retreinar':
                 st.session_state.model = model
                 st.session_state.loss_history.extend(loss_story)
                 st.session_state.model_ready=True
-                time.sleep(5) 
 
             st.sidebar.success("Re-Treinamento realizado com sucesso!")
     except Exception as e:
@@ -221,8 +219,6 @@ with aba_analise:
     else:
         st.warning("Nenhum Histórico de Perda disponível. Treine novamente o modelo")
 
-
-
 # ============ Treinamento ============
 with aba_treinamento:
     st.header("📊 Treinamento")
@@ -231,4 +227,28 @@ with aba_treinamento:
     if st.session_state.model_ready == False:
         st.info("Treine Primeiro")
     else:
-        st.info("TREINO")
+        params = {
+            "Épocas": epochs_input,
+            "Taxa de Aprendizado": learning_rate_input,
+            "Penalidade": penality_input,
+            "Batch Size": batch_size_box,
+            "Temperatura": temperature_input
+        }
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.subheader("⚙️ Parâmetros")
+            for key, value in params.items():
+                st.write(f'**{key}**: {value}')
+
+        with col2:
+            st.subheader("📊 Estatísticas do Modelo")
+            loss_list = (st.session_state.loss_history)
+            total = len(loss_list)
+            st.write(f"**Quantidade Total de Perdas**: {total}")
+
+            if total > 0:
+                st.write(f'**Última Perda**: {loss_list[-1]:.4f}')
+                st.write(f'**Melhor Perda**: {min(loss_list):.4f}')
+                
