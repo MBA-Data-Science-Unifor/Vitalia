@@ -1,0 +1,8 @@
+*.env
+*.jsonl
+*.json
+*.txt
+*.venv
+Dockerfile
+**/Dockerfile
+Dockerfile.*
