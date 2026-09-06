@@ -110,32 +110,35 @@ if st.session_state.acao_ativa == 'botao_treinar':
         st.session_state.model_ready=False
 
     st.session_state.acao_ativa = ''
-    print(f'Ação Ativa: {st.session_state.acao_ativa}')
 
 
 # ============ Logica do botão de Re-Treinamento ============
 elif st.session_state.acao_ativa == 'botao_retreinar':
+    try:
+        if not st.session_state.get('model_ready', False):
+            st.sidebar.warning("Nenhum modelo treinado para re-treinar. Use 'Treinar' primeiro.")
 
-    if not st.session_state.get('model_ready', False):
-        st.sidebar.warning("Nenhum modelo treinado para re-treinar. Use 'Treinar' primeiro.")
+        elif arquivo_principal is None:
+            placeholder = st.sidebar.empty()
+            placeholder.info("Precisa de um arquivo para realizar o treinamento")
+            
+            # Intervalo de tempo para retirar o aviso prévio
+            time.sleep(3)
+            
+            # Remoção da mensagem de alerta
+            placeholder.empty()
+        else:
+            with st.spinner("Re-Treinando..."):
+                simulacao_loss = [0.9, 0.6, 0.33, 0.21]
+                st.session_state.loss_history.extend(simulacao_loss)
+                st.session_state.model_ready=True
+                time.sleep(5) 
 
-    elif arquivo_principal is None:
-        placeholder = st.sidebar.empty()
-        placeholder.info("Precisa de um arquivo para realizar o treinamento")
-        
-        # Intervalo de tempo para retirar o aviso prévio
-        time.sleep(3)
-        
-        # Remoção da mensagem de alerta
-        placeholder.empty()
-    else:
-        with st.spinner("Re-Treinando..."):
-            simulacao_loss = [0.9, 0.6, 0.33, 0.21]
-            st.session_state.loss_history.extend(simulacao_loss)
-            st.session_state.model_ready=True
-            time.sleep(5) 
+            st.sidebar.success("Re-Treinamento realizado com sucesso!")
+    except Exception as e:
+        st.sidebar.error(f'Erro durante o re-treinamento: {str(e)}')
+        st.session_state.model_ready=False
 
-        st.sidebar.success("Re-Treinamento realizado com sucesso!")
     st.session_state.acao_ativa = ''
 
 
