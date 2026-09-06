@@ -1,8 +1,8 @@
-.env
-.jsonl
-.json
-.txt
-.venv
+*.env
+*.jsonl
+*.json
+*.txt
+*.venv
 Dockerfile
 **/Dockerfile
 Dockerfile.*

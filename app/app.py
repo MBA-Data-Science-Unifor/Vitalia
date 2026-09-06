@@ -101,6 +101,7 @@ if st.session_state.acao_ativa == 'botao_treinar':
                 simulacao_loss = [0.33, 0.55, 0.81, 0.2]
                 st.session_state.loss_history  = simulacao_loss
                 st.session_state.model_ready=True
+                time.sleep(5) 
 
             st.sidebar.success("Treinamento realizado com sucesso!")
 
@@ -114,30 +115,28 @@ if st.session_state.acao_ativa == 'botao_treinar':
 
 # ============ Logica do botão de Re-Treinamento ============
 elif st.session_state.acao_ativa == 'botao_retreinar':
-    st.session_state.model_ready=False
 
-    # Avaliar se o arquivo existe
-    if arquivo_principal is None:
-        # Criação de uma mensagem de alerta
+    if not st.session_state.get('model_ready', False):
+        st.sidebar.warning("Nenhum modelo treinado para re-treinar. Use 'Treinar' primeiro.")
+
+    elif arquivo_principal is None:
         placeholder = st.sidebar.empty()
-        placeholder.info("Precisa de um arquivo para realizar o re-treinamento")
-
+        placeholder.info("Precisa de um arquivo para realizar o treinamento")
+        
         # Intervalo de tempo para retirar o aviso prévio
-        time.sleep(5)
+        time.sleep(3)
+        
         # Remoção da mensagem de alerta
         placeholder.empty()
     else:
-
-        # Teste Não Oficial
-        with st.spinner("Treinando..."):
-            simulacao_loss = [0.8, 0.1, 0.9, 0.6]
-            st.session_state.loss_history = simulacao_loss
+        with st.spinner("Re-Treinando..."):
+            simulacao_loss = [0.9, 0.6, 0.33, 0.21]
+            st.session_state.loss_history.extend(simulacao_loss)
             st.session_state.model_ready=True
+            time.sleep(5) 
 
         st.sidebar.success("Re-Treinamento realizado com sucesso!")
-
     st.session_state.acao_ativa = ''
-
 
 
 # ============ Abas ============
