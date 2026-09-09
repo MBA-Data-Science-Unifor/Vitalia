@@ -1,0 +1,66 @@
+# ==============================
+# BASE DE DADOS - NÃO VERSIONAR
+# ==============================
+# A base é fornecida pelo professor e NÃO deve ser enviada
+saude.jsonl
+*.jsonl
+
+# ==============================
+# PYTHON
+# ==============================
+__pycache__/
+*.py[cod]
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+*.pyc
+
+# ==============================
+# STREAMLIT
+# ==============================
+.streamlit/
+
+# ==============================
+# MODELOS TREINADOS (ARQUIVOS PESADOS)
+# ==============================
+# O modelo ajustado pode ter centenas de MB. Não versionar.
+trained_model/
+*.pt
+*.pth
+*.bin
+*.safetensors
+*.h5
+
+# ==============================
+# IDEs E SISTEMA OPERACIONAL
+# ==============================
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ==============================
+# LOGS E TEMPORÁRIOS
+# ==============================
+*.log
+*.tmp
+*.temp
+
+# ==============================
+# NOTEBOOKS (CHECKPOINTS)
+# ==============================
+# Se você rodar notebooks localmente, ignore os checkpoints
+.ipynb_checkpoints/

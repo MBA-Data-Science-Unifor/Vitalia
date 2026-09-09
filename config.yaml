@@ -1,0 +1,37 @@
+# ============================================================
+# CONFIGURAÇÃO PRINCIPAL DO TREINO LoRA - Vitalia
+# ============================================================
+
+# --- Parâmetros de treino ---
+epochs: 10                        # Número de épocas (early stopping pode interromper antes)
+learning_rate: 0.0001             # Taxa de aprendizado do AdamW (1e-4)
+batch_size: 4                     # Exemplos por lote
+max_length: 256                   # Comprimento máximo de tokenização (captura respostas completas)
+weight_decay: 0.01                # Regularização L2 (evita overfitting)
+label_smoothing: 0.0              # 0.0 = CrossEntropy padrão (igual ao treino manual que deu certo)
+
+# --- Parâmetros LoRA ---
+lora_r: 4                         # Rank das matrizes (baixo → menos overfitting)
+lora_alpha: 8                     # Fator de escala (geralmente 2×r)
+lora_dropout: 0.1                 # Dropout nas matrizes LoRA (regularização)
+lora_target_modules: ['c_attn']   # Camadas de atenção do GPT-2 (Conv1D)
+
+# --- Dados ---
+data_path: ..//saude.jsonl         # Caminho para o dataset (relativo ao notebook)
+validation_split: 0.20            # 20% para validação (240 exemplos)
+seed: 42                          # Semente para reprodutibilidade
+
+# --- Saída ---
+output_dir: modelo_lora_trainer   # Pasta onde o modelo treinado será salvo
+
+# --- Parâmetros de geração (inferência) ---
+generation:
+  max_new_tokens: 70              # Tamanho máximo da resposta (curta e direta)
+  do_sample: false                # Modo guloso (determinístico) – evita alucinações
+  num_beams: 4                    # Beam Search – explora múltiplos caminhos
+  repetition_penalty: 2.2         # Penaliza repetições (evita loops)
+  no_repeat_ngram_size: 4         # Impede repetição de 4-gramas
+
+# --- Early Stopping ---
+early_stopping_patience: 3        # Interrompe após 3 épocas sem melhora
+early_stopping_threshold: 0.001   # Melhora mínima exigida (1e-3)
