@@ -39,7 +39,7 @@ with st.sidebar:
     st.header("Parâmetros")
 
     # Recuperação do arquivo principal
-    arquivo_principal = load_dataset(st)
+    #arquivo_principal = load_dataset(st)
 
     epochs_input = st.number_input(
         label="Defina a Quantidade de Épocas", 
@@ -56,10 +56,10 @@ with st.sidebar:
         [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     )
 
-    temperature_input = st.number_input(
-        label='Selecione a Temperatura do Modelo (0.1 - 100.0)',
-        min_value=0.1, max_value=100.0, value=0.5, step=0.1, format="%.2f"
-    )
+    #temperature_input = st.number_input(
+       # label='Selecione a Temperatura do Modelo (0.1 - 100.0)',
+        #min_value=0.1, max_value=100.0, value=0.5, step=0.1, format="%.2f"
+    #)
 
     penality_input = st.number_input(
         label='Selecione a Penalidade do Modelo (0.1 - 100.0)',
@@ -83,28 +83,28 @@ elif botao_retreinar:
 # ============ Logica do Botão de Treinamento ============
 if st.session_state.acao_ativa == 'botao_treinar':
     try:
-        if arquivo_principal is None:
+        #if arquivo_principal is None:
             # Criação de uma mensagem de alerta
-            placeholder = st.sidebar.empty()
-            placeholder.info("Precisa de um arquivo para realizar o treinamento")
+            #placeholder = st.sidebar.empty()
+            #placeholder.info("Precisa de um arquivo para realizar o treinamento")
 
             # Intervalo de tempo para retirar o aviso prévio
-            time.sleep(3)
+            #time.sleep(3)
 
             # Remoção da mensagem de alerta
-            placeholder.empty()
-        else:
+            #placeholder.empty()
+        #else:
             # train_model() # deve capturar o loss story
             # load_or_init_model() 
 
             # Teste Não Oficial
             with st.spinner("Treinando..."):
                 model, loss_story = train_new_model(
-                    arquivo_principal,
+                    '',
                     epochs=epochs_input,
                     learning_rate=learning_rate_input,
                     batch_size=batch_size_box,
-                    temperature=temperature_input,
+                    temperature=0,
                     penalty=penality_input
                 )
 
@@ -128,15 +128,15 @@ elif st.session_state.acao_ativa == 'botao_retreinar':
         if st.session_state.model_ready == False:
             st.sidebar.warning("Nenhum modelo treinado para re-treinar. Use 'Treinar' primeiro.")
 
-        elif arquivo_principal is None:
-            placeholder = st.sidebar.empty()
-            placeholder.info("Precisa de um arquivo para realizar o treinamento")
+        #elif arquivo_principal is None:
+           # placeholder = st.sidebar.empty()
+           # placeholder.info("Precisa de um arquivo para realizar o treinamento")
             
             # Intervalo de tempo para retirar o aviso prévio
-            time.sleep(3)
+          #  time.sleep(3)
             
             # Remoção da mensagem de alerta
-            placeholder.empty()
+           # placeholder.empty()
         else:
 
             # Efetuar o Re-Treinamento
@@ -144,11 +144,11 @@ elif st.session_state.acao_ativa == 'botao_retreinar':
 
                 model, loss_story = continue_training_model(
                     model=st.session_state.model,
-                    dataset=arquivo_principal,
+                    dataset='',
                     add_epochs=epochs_input,
                     learning_rate=learning_rate_input,
                     batch_size=batch_size_box,
-                    temperature=temperature_input,
+                    temperature=0,
                     penalty=penality_input
                 )
 
@@ -200,9 +200,7 @@ with aba_chat:
             st.session_state.messages.append({'role': 'user', 'content': prompt})
 
             # Salva a resposta do usuário
-            resposta = f"Reposta do Assistente ({temperature_input} {penality_input}): "
-
-            # resposta = generate_response(temperatua)
+            resposta = f"Reposta do Assistente ({penality_input}): "
             st.session_state.messages.append({'role': 'assistant', 'content': resposta})
 
             # Atualiza a lista
@@ -231,8 +229,8 @@ with aba_treinamento:
             "Épocas": epochs_input,
             "Taxa de Aprendizado": learning_rate_input,
             "Penalidade": penality_input,
-            "Batch Size": batch_size_box,
-            "Temperatura": temperature_input
+            "Batch Size": batch_size_box
+            #"Temperatura": temperature_input
         }
 
         col1, col2 = st.columns(2)
