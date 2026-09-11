@@ -63,8 +63,8 @@ def continue_training_model(model, add_epochs: int = 5,
     model['epochs'] += add_epochs
     model['learning_rate'] = learning_rate
     model['batch_size'] = batch_size
-    model['temperature'] = temperature
-    model['penalty'] = penalty
+    model['temperature'] = temperature_input
+    model['penalty'] = penalty_input
 
     # Adicionamento de perdas durante o re-treinamento
     model['loss_history'].extend(aditional_loss)
