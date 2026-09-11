@@ -12,7 +12,8 @@ def load_model():
 
 
 
-def train_new_model(dataset, epochs, learning_rate, batch_size, temperature, penalty):
+def train_new_model( epochs: int = 10, learning_rate: float = 0.001, batch_size: int = 4, 
+                    penalty_input: float = 0.1, temperature_input: float = 0.7):
     """
     Simulação do treinamento
     """    
@@ -31,8 +32,8 @@ def train_new_model(dataset, epochs, learning_rate, batch_size, temperature, pen
         'epochs': epochs,
         'learning_rate': learning_rate,
         'batch_size': batch_size,
-        'temperature': temperature,
-        'penality': penalty,
+        'temperature': temperature_input,
+        'penality': penalty_input,
         'loss_history': loss_history
     }
 
@@ -40,7 +41,9 @@ def train_new_model(dataset, epochs, learning_rate, batch_size, temperature, pen
 
 
 
-def continue_training_model(model, dataset, add_epochs, learning_rate, batch_size, temperature, penalty):
+def continue_training_model(model, add_epochs: int = 5, 
+                            learning_rate: float = 0.001, batch_size: int = 4, 
+                            temperature_input: float = 0.7, penalty_input: float = 0.1):
     """
     Simula o Re-Treinamento
     """
