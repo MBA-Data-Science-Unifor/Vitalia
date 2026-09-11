@@ -35,3 +35,13 @@ generation:
 # --- Early Stopping ---
 early_stopping_patience: 3        # Interrompe após 3 épocas sem melhora
 early_stopping_threshold: 0.001   # Melhora mínima exigida (1e-3)
+
+# --- Comparação de épocas (pior / bom / melhor) ---
+# Escolhidas com base na análise das curvas de val_loss do treino:
+#   pior    → época 1  (val_loss 2.807, underfitting)
+#   bom     → época 5  (val_loss 2.412, 94% do ganho total)
+#   melhor  → época 10 (val_loss 2.385, menor val_loss observada)
+comparacao_epocas:
+  pior: 1
+  bom: 5
+  melhor: 10

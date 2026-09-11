@@ -1,0 +1,4 @@
+Perfil,Época,Train Loss,Val Loss,Perplexidade,Ganho acumulado (%)
+pior,1,2.7564,2.8064,16.55,
+bom,5,2.5067,2.4144,11.18,
+melhor,10,2.4795,2.3842,10.85,
