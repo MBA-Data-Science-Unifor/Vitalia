@@ -1,7 +1,8 @@
 # ============ Importação de Bibliotecas ============
 import streamlit as st
 import time
-from app_functions import train_new_model, load_dataset, continue_training_model
+from storage import load_messages, save_messages, clear_messages, load_params, save_params, DEFAULT_PARAMS
+
 
 # ============ Configuração Inicial ============
 st.set_page_config(
@@ -13,242 +14,189 @@ st.title("Vital AI (Vital)")
 st.write("Avalie os Modelos")
 
 
-# ============ Inicialização dos Estados ============
-
-# Preparação do Modelo
-if 'model_ready' not in st.session_state:
-    st.session_state.model_ready = False
+# =============== Inicialização dos Estados ===============
 
 # Criação do Historico de Mensagens
 if 'messages' not in st.session_state:
-    st.session_state.messages = []
+    st.session_state.messages = load_messages()
+
+if 'saved_params' not in st.session_state:
+    st.session_state.saved_params = load_params()
+
+# Preparação do Modelo
+#if 'model_ready' not in st.session_state:
+    #st.session_state.model_ready = False
 
 # Criação do Historico de Perda
-if 'loss_history' not in st.session_state:
-    st.session_state.loss_history = []
-
-# Validação de qual botão executar
-if 'acao_ativa' not in st.session_state:
-    st.session_state.acao_ativa = ''    
+#if 'loss_history' not in st.session_state:
+    #st.session_state.loss_history = []
 
 
 
-# ============ SideBar ============
+def _return_param(key, value):
+    """Define o valor inicial para os parâmetros"""
+
+    if key not in st.session_state:
+        st.session_state[key] = value
+
+
+# =============== Lista de Parâmetros ===============
+param_list = st.session_state.saved_params
+
+# =============== SideBar ===============
 with st.sidebar:
     st.title('Menu Principal')
     st.header("Parâmetros")
 
-    # Recuperação do arquivo principal
-    arquivo_principal = load_dataset(st)
+    # Definição das variaveis dos parâmetros
+    column_list = ['model_select', 'max_new_tokens', 'do_sample', 'num_beams', 
+                   'repetition_penalty', 'no_repeat_ngram_size','temperature', 'top_p']
 
-    epochs_input = st.number_input(
-        label="Defina a Quantidade de Épocas", 
-        min_value=1.0, max_value=100.0, value=1.0, step=1.0
-    )
+    for c in column_list:
+        _return_param(c, param_list[c])
 
-    learning_rate_input = st.number_input(
-        "Defina a Taxa de Aprendizado",
-        min_value=0.1, max_value=100.0, value=0.1, step=0.1, format="%.2f"
-    )
 
-    batch_size_box = st.selectbox(
-        "Defina a Quantidade de Lotes",
-        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-    )
+    # Escolha o Modelo que deseja 
+    model_select = st.selectbox("Escolha seu Modelo", 
+                                ['Bom', 'Mediano', 'Ruim'], key='model_select')
 
+    # max_tokens
+    max_new_tokens = st.number_input(
+        "Máx. de tokens novos",
+        min_value=1.0, max_value=60.0, 
+        step=1.0, key='max_new_tokens',
+        help='Numero máximo de tokens novos que o modelo vai gerar'
+    ) #value=60.0, 
+
+    # Amostragem
+    do_sample = st.checkbox("Usar amostragem (do_sample)", key="do_sample",  
+                            help='chave mestra entre modelo determinístico e estocástico')  #value=False, 
+
+    # Número de Beams
+    num_beams = st.number_input("Número de Hipóteses (Beams)", 
+                    min_value=1.0, max_value=10.0, key='num_beams', step=1.0, 
+                    help='Quantas hipóteses paralelas o modelo mantém ao mesmo tempo durante a decodificação') #value=4.0, 
+
+    # Penalidade
+    repetition_penalty = st.number_input(
+        "Penalidade de Repetição",
+        min_value=1.0, max_value=10.0,
+        step=1.0, key='repetition_penalty' 
+    ) #value=1.0,
+
+    # Temperatura
     temperature_input = st.number_input(
-        label='Selecione a Temperatura do Modelo (0.1 - 100.0)',
-        min_value=0.1, max_value=100.0, value=0.5, step=0.1, format="%.2f"
-    )
+        label='Selecione a Temperatura do Modelo',
+        min_value=0.1, max_value=1.0, 
+        step=0.1, format="%.2f", key='temperature',
+        help="a temperatura 'achata' ou 'afina' a distribuição de probabilidade antes de amostrar"
+    ) #value=0.7, 
 
-    penality_input = st.number_input(
-        label='Selecione a Penalidade do Modelo (0.1 - 100.0)',
-        min_value=0.1, max_value=100.0, value=0.1, step=0.1, format="%.2f"
-    )
+    # NGRAM SIZE
+    no_repeat_ngram_size = st.number_input(
+        label='Tamanho de n-gramas sem repetição',
+        min_value=1.0, max_value=4.0, 
+        step=1.0, key='no_repeat_ngram_size',
+        help='bloqueia a repetição de n-gramas já vistos'
+    ) #value=4.0, 
 
-    col1, col2 = st.columns(2)
+    # Top P
+    top_p = st.slider(
+        "Amostrágem de Núcleo (top p)", 
+        min_value=0.1, max_value=1.0, step=0.05, key='top_p', 
+        help="considera apenas o menor conjunto de tokens cuja probabilidade acumulada >= p"
+    ) #value=0.9, 
+
+    col1, col2 = st.columns([2,1])
+
     with col1:
-        botao_treinar = st.button("Treinar", use_container_width=True)
+        params_button = st.button("💾 Salvar Parâmetros", use_container_width=True)
+
     with col2:
-        botao_retreinar = st.button("Re-Treinar", use_container_width=True)
+        params_reset_button = st.button("Re-Setar Parâmetros", use_container_width=True)
 
 
-# ============ Validação do Treinamento ============
-if botao_treinar:
-    st.session_state.acao_ativa = 'botao_treinar' # persistência na escolha do botão treinar
-elif botao_retreinar:
-    st.session_state.acao_ativa = 'botao_retreinar' # persistência na escolha do botão re-treinar
+# =============== Logica de Salvar Parâmetros ===============
+if params_button:
+    new_params = {
+        "model_select": st.session_state['model_select'],
+        "max_new_tokens": int(st.session_state['max_new_tokens']),
+        "do_sample": bool(st.session_state['do_sample']),
+        "num_beams": int(st.session_state['num_beams']),
+        "repetition_penalty": float(st.session_state['repetition_penalty']),
+        "no_repeat_ngram_size": int(st.session_state['no_repeat_ngram_size']),
+        "temperature": float(st.session_state['temperature']),
+        "top_p": float(st.session_state['top_p']),
+    }
+
+    save_params(new_params)
+    st.session_state.saved_params = new_params
+
+    alerta = st.empty()
+    alerta = st.success("Parâmetros salvos!")
+    time.sleep(5)
+    alerta.empty()
 
 
-# ============ Logica do Botão de Treinamento ============
-if st.session_state.acao_ativa == 'botao_treinar':
-    try:
-        if arquivo_principal is None:
-            # Criação de uma mensagem de alerta
-            placeholder = st.sidebar.empty()
-            placeholder.info("Precisa de um arquivo para realizar o treinamento")
+elif params_reset_button:
+    
+    save_params(DEFAULT_PARAMS.copy())
+    st.session_state.saved_params = DEFAULT_PARAMS.copy()
 
-            # Intervalo de tempo para retirar o aviso prévio
-            time.sleep(3)
+    for c in column_list:
+        st.session_state.pop(c, param_list[c])
 
-            # Remoção da mensagem de alerta
-            placeholder.empty()
-        else:
-            # train_model() # deve capturar o loss story
-            # load_or_init_model() 
-
-            # Teste Não Oficial
-            with st.spinner("Treinando..."):
-                model, loss_story = train_new_model(
-                    arquivo_principal,
-                    epochs=epochs_input,
-                    learning_rate=learning_rate_input,
-                    batch_size=batch_size_box,
-                    temperature=temperature_input,
-                    penalty=penality_input
-                )
-
-                # Atualiza o Modelo e a adição de suas perdas
-                st.session_state.model = model
-                st.session_state.loss_history = loss_story
-                st.session_state.model_ready=True
-
-            st.sidebar.success("Treinamento realizado com sucesso!")
-
-    except Exception as e:
-        st.sidebar.error(f'Erro durante o treinamento: {str(e)}')
-        st.session_state.model_ready=False
-
-    st.session_state.acao_ativa = ''
+    st.rerun()
 
 
-# ============ Logica do botão de Re-Treinamento ============
-elif st.session_state.acao_ativa == 'botao_retreinar':
-    try:
-        if st.session_state.model_ready == False:
-            st.sidebar.warning("Nenhum modelo treinado para re-treinar. Use 'Treinar' primeiro.")
-
-        elif arquivo_principal is None:
-            placeholder = st.sidebar.empty()
-            placeholder.info("Precisa de um arquivo para realizar o treinamento")
-            
-            # Intervalo de tempo para retirar o aviso prévio
-            time.sleep(3)
-            
-            # Remoção da mensagem de alerta
-            placeholder.empty()
-        else:
-
-            # Efetuar o Re-Treinamento
-            with st.spinner("Re-Treinando..."):
-
-                model, loss_story = continue_training_model(
-                    model=st.session_state.model,
-                    dataset=arquivo_principal,
-                    add_epochs=epochs_input,
-                    learning_rate=learning_rate_input,
-                    batch_size=batch_size_box,
-                    temperature=temperature_input,
-                    penalty=penality_input
-                )
-
-                st.session_state.model = model
-                st.session_state.loss_history.extend(loss_story)
-                st.session_state.model_ready=True
-
-            st.sidebar.success("Re-Treinamento realizado com sucesso!")
-    except Exception as e:
-        st.sidebar.error(f'Erro durante o re-treinamento: {str(e)}')
-        st.session_state.model_ready=False
-
-    st.session_state.acao_ativa = ''
 
 
-# ============ Abas ============
-aba_chat, aba_treinamento, aba_analise = st.tabs(['💬 Chat', '📊 Treinamento', '📈 Análise'])
 
-# ============ Chat ============
+# =============== Abas ===============
+aba_chat, aba_analise = st.tabs(['💬 Chat', '📈 Análise'])
+
+# =============== Chat ===============
 with aba_chat:
     st.header("💬 Discussão com o Agente")
 
     # Definição do Layout Padrão do ChatBot
     col1, col2 = st.columns([6,1])
 
-    # Logica do Botão de Remoção do Histórico de Mensagens
     with col2:
         if st.button("Limpar Histórico", use_container_width=True):
-            st.session_state.messages = [] # Limpeza do Histórico
-            st.rerun() # Recarregamento da página após a limpeza
-
-    # Avalia se o modelo está pronto para responder
-    if st.session_state.model_ready == False:
-        st.warning("Treine Primeiro")
-    else:
-        # Criação de um Container de mensagens
-        chat_container = st.container(height=200, autoscroll=True)
-        
-        # Exibição do Histórico de Mensagens
-        with chat_container:
-            for msg in (st.session_state.messages):
-                with st.chat_message(msg["role"]):
-                    st.markdown(msg["content"])
-
-        # Execução do Prompt de Comando
-        if prompt := st.chat_input("Escreva Sua Pergunta"):
-
-            # Salva a pergunta do usuário
-            st.session_state.messages.append({'role': 'user', 'content': prompt})
-
-            # Salva a resposta do usuário
-            resposta = f"Reposta do Assistente ({temperature_input} {penality_input}): "
-
-            # resposta = generate_response(temperatua)
-            st.session_state.messages.append({'role': 'assistant', 'content': resposta})
-
-            # Atualiza a lista
+            st.session_state.messages = []           
+            clear_messages()
             st.rerun()
 
+    # Criação de um Container de mensagens
+    chat_container = st.container(height=200, autoscroll=True)
+        
+    # Exibição do Histórico de Mensagens
+    with chat_container:
+        for msg in (st.session_state.messages):
+            with st.chat_message(msg["role"]):
+                st.markdown(msg["content"])
 
-# ============ Análise ============
+
+    if prompt := st.chat_input("Escreva Sua Pergunta"):
+        # Salva a pergunta do usuário
+        st.session_state.messages.append({'role': 'user', 'content': prompt})
+
+        # Salva a resposta do assistente, porém ainda está no modo Dummy
+        resposta = f"Resposta do Assistente ({param_list}):"
+
+        st.session_state.messages.append({'role': 'assistant', 'content': resposta})
+
+        # 💾 Persiste em disco
+        save_messages(st.session_state.messages) 
+        st.rerun()
+
+
+# =============== Análise do Histórico de Perda ===============
 with aba_analise:
     st.header("📈 Análise do Histórico de Perda")
 
-    if st.session_state.loss_history:
-        # Exebição de um gráfico de histórico de perda
-        st.line_chart(st.session_state.loss_history)
-    else:
-        st.warning("Nenhum Histórico de Perda disponível. Treine novamente o modelo")
-
-# ============ Treinamento ============
-with aba_treinamento:
-    st.header("📊 Treinamento")
-
-    # Avalia se o modelo está pronto para responder
-    if st.session_state.model_ready == False:
-        st.info("Treine Primeiro")
-    else:
-        params = {
-            "Épocas": epochs_input,
-            "Taxa de Aprendizado": learning_rate_input,
-            "Penalidade": penality_input,
-            "Batch Size": batch_size_box,
-            "Temperatura": temperature_input
-        }
-
-        col1, col2 = st.columns(2)
-
-        with col1:
-            st.subheader("⚙️ Parâmetros")
-            for key, value in params.items():
-                st.write(f'**{key}**: {value}')
-
-        with col2:
-            st.subheader("📊 Estatísticas do Modelo")
-            loss_list = (st.session_state.loss_history)
-            total = len(loss_list)
-            st.write(f"**Quantidade Total de Perdas**: {total}")
-
-            if total > 0:
-                st.write(f'**Última Perda**: {loss_list[-1]:.4f}')
-                st.write(f'**Melhor Perda**: {min(loss_list):.4f}')
-                
+    # Exibição de um gráfico de histórico de perda
+    # Isso é apenas uma simulação, poderá ser alterado através da integração
+    loss_history = [0.5, 3, 9.5, 2, 1.5] # (épocas por historico de perda)
+    st.line_chart(loss_history)
