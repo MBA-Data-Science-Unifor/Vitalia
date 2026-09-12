@@ -1,5 +1,17 @@
 # 🚀 Vitalia – Assistente Inteligente para Saúde e Bem-Estar
 
+## 👥 Identificação do Grupo
+
+- **Grupo:** Grupo 1
+- **Integrantes:**
+  - Alexandre Franco – Matrícula: 2650081
+  - Caio Cunha – Matrícula: 2650555
+  - Rodrigo Franco – Matrícula: 2650089
+- **Disciplina:** Introdução a aprendizagem de maquina
+- **Professor(a):** Matheus Leite Pirani Mafra
+
+---
+
 **Vitalia** é uma aplicação **Streamlit** que permite conversar com **três checkpoints GPT‑2 pequeno em português** (`pierreguillou/gpt2-small-portuguese`) fine‑tunados com **LoRA** para o domínio de saúde, alimentação, exercício, sono e bem‑estar.
 
 Cada modelo corresponde a uma **época diferente do mesmo treino**, permitindo comparar visualmente a evolução da qualidade das respostas:
@@ -70,7 +82,7 @@ Pipeline completo de **fine‑tuning de LLMs** aplicado a um domínio específic
 └─── README.md
 ```
 
-> **⚠️ Atenção:** o arquivo `saude.jsonl` (base de treino) **não** está incluído no pacote de entrega. O app não precisa dele — só o notebook de treino.
+> **⚠️ Atenção:** o arquivo `saude.jsonl` (base de treino) **não** está incluído no pacote de entrega. O app não precisa dele — só o notebook de treino. Para reproduzir o treino, coloque o arquivo na raiz do projeto (veja abaixo).
 
 ---
 
@@ -210,45 +222,6 @@ streamlit run app/app.py
 
 A aplicação abrirá em `http://localhost:8501`.
 
-### 7) (Opcional) Teste rápido sem UI
-
-Salve como `test_models.py` na raiz e rode `python test_models.py`:
-
-```python
-# test_models.py
-import sys; sys.path.insert(0, "app")
-from app_functions import load_config, resolve_path, load_model, respond, adapter_fingerprint
-
-cfg = load_config()
-for key in ["Ruim", "Bom", "Ótimo"]:
-    path = resolve_path(cfg["models"][key])
-    print(f"\n=== {key} → {path} ===")
-    model, tok, dev = load_model(key, path, cfg["base_model"])
-    print("fingerprint:", adapter_fingerprint(model))
-    r = respond(model, tok, dev,
-                instruction="O que é hipertensão?",
-                prompt_template=cfg["prompt_template"],
-                max_new_tokens=70, do_sample=False, num_beams=4,
-                repetition_penalty=2.2, no_repeat_ngram_size=4)
-    print("resposta:", r)
-```
-
-Saída esperada (cada modelo com **fingerprint diferente**):
-
-```
-=== Ruim → ...\model\modelo_ruim\epoca_1 ===
-fingerprint: 9f96be90 (24 tensores)
-resposta: Sim, o que é a falta de oxigênio?
-
-=== Bom → ...\model\modelo_bom\epoca_5 ===
-fingerprint: a1b2c3d4 (24 tensores)   ← diferente
-resposta: A hipertensão pode ser causada por uma série de fatores...
-
-=== Ótimo → ...\model\modelo_otimo\epoca_10 ===
-fingerprint: e5f6a7b8 (24 tensores)   ← diferente
-resposta: A hipertensão pode ser causada por uma série de fatores...
-```
-
 ---
 
 ## 📝 Configuração (`config.yaml`)
@@ -306,32 +279,36 @@ training_reference:
 
 ## 💻 Como Usar a Aplicação
 
-### Aba **💬 Chat**
+### 📍 Onde converso?
+- Aba **💬 Chat** — digite sua pergunta e pressione Enter.
 
-1. **Sidebar**:
-   - **Escolha seu Modelo**: `Ruim (época 1)`, `Bom (época 5)`, `Ótimo (época 10)`
-   - **Máx. de tokens novos**: 1–200 (default 70)
-   - **Usar amostragem (do_sample)**: on/off (default off)
-   - **Número de Hipóteses (Beams)**: 1–10 (default 4)
-   - **Penalidade de Repetição**: 1.0–10.0 (default 2.2)
-   - **Temperatura**: 0.1–2.0 (default 0.7, só ativo com sampling)
-   - **n‑gramas sem repetição**: 0–6 (default 4)
-   - **Amostragem de Núcleo (top_p)**: 0.1–1.0 (default 0.9, só ativo com sampling)
-   - **💾 Salvar Parâmetros** / **↺ Resetar** / **🔄 Recarregar modelos do disco**
-2. **Digite uma pergunta** (ex.: `O que é hipertensão?`) e pressione Enter.
-3. Cada resposta exibe uma etiqueta:
-   ```
-   🤖 Ótimo (época 10) · device=cuda · fingerprint=9f96be90 (24 tensores)
-   ```
-   Se o **fingerprint** mudar entre Ruim/Bom/Ótimo, o adaptador está sendo trocado corretamente.
+### 📍 Onde ajusto os parâmetros?
+- **Sidebar** da aplicação:
+  - **Escolha seu Modelo**: `Ruim (época 1)`, `Bom (época 5)`, `Ótimo (época 10)`
+  - **Máx. de tokens novos**: 1–200 (default 70)
+  - **Usar amostragem (do_sample)**: on/off (default off)
+  - **Número de Hipóteses (Beams)**: 1–10 (default 4)
+  - **Penalidade de Repetição**: 1.0–10.0 (default 2.2)
+  - **Temperatura**: 0.1–2.0 (default 0.7, só ativo com sampling)
+  - **n‑gramas sem repetição**: 0–6 (default 4)
+  - **Amostragem de Núcleo (top_p)**: 0.1–1.0 (default 0.9, só ativo com sampling)
+  - **💾 Salvar Parâmetros** / **↺ Resetar** / **🔄 Recarregar modelos do disco**
 
-### Painel **🔍 Debug — modelos em cache**
+### 📍 Onde carrego a base de treino?
+- Para **usar o app (chat)**, você **não precisa** da base `saude.jsonl`.
+- Para **reproduzir o treino**, coloque o arquivo `saude.jsonl` na **raiz do projeto** (`Assistant Health/saude.jsonl`) antes de abrir o notebook `analysis/model_2.ipynb`.
+- O caminho é lido do `config.yaml` em `training_reference.data_path: "saude.jsonl"`.
 
+### 📍 Onde treino?
+- Abra o notebook **`analysis/model_2.ipynb`** no Jupyter ou Google Colab (com GPU).
+- Execute todas as células. Os checkpoints serão salvos em `modelo_lora_trainer/epoca_1..10/`.
+- Depois mova para `model/` conforme passo 4 da instalação.
+
+### 📍 Onde vejo as curvas de treino?
+- Aba **📈 Análise** — curvas de `train_loss` e `val_loss` + tabela comparativa Ruim/Bom/Ótimo.
+
+### 🔍 Debug — modelos em cache
 No expander da sidebar: caminho resolvido do adaptador atual, última resposta e modelos em memória com seus fingerprints.
-
-### Aba **📈 Análise**
-
-Curvas de `train_loss` e `val_loss` do notebook + tabela comparativa Ruim/Bom/Ótimo.
 
 ---
 
@@ -389,11 +366,20 @@ O bloco `### Contexto:` só aparece quando `input` não é vazio.
 
 ## 🔁 Reproduzindo o Treino
 
-1. Coloque o `saude.jsonl` na raiz do projeto.
+1. Coloque o `saude.jsonl` na raiz do projeto (`Assistant Health/saude.jsonl`).
 2. Abra `analysis/model_2.ipynb` no Jupyter ou no Google Colab (com GPU).
 3. Execute todas as células.
 
 Os checkpoints ficam em `modelo_lora_trainer/epoca_1..10/`. Mova para `model/` como descrito no passo 4.
+
+### ⏱️ Tempo estimado de treino
+
+- **GPU NVIDIA moderna** (T4, V100, RTX 3060+): **~10 a 30 minutos** para as 10 épocas.
+- **Google Colab gratuito** (GPU T4): **~15 a 25 minutos**.
+- **CPU moderna** (8+ núcleos): **~2 a 5 horas**.
+- A primeira execução baixa o modelo base `gpt2-small-portuguese` (~500 MB), o que pode adicionar alguns minutos.
+
+> Os tempos variam conforme hardware, I/O e cache. O treino usa LoRA, batch size 4 e `max_length=256`, o que o torna viável mesmo em GPUs modestas (4 GB+).
 
 **Configuração do treino** (`config.yaml` → seção `training_reference`):
 
@@ -422,10 +408,14 @@ Os checkpoints ficam em `modelo_lora_trainer/epoca_1..10/`. Mova para `model/` c
 
 ## 👨‍💻 Créditos
 
-Desenvolvido por **[Seu Nome]** como projeto final da disciplina **[Nome da Disciplina]**.
+Desenvolvido pelo **Grupo [NÚMERO DO GRUPO]** como projeto final da disciplina **[NOME DA DISCIPLINA]**.
 
-- **Professor(a):** [Nome do Professor]
-- **Data da Entrega:** [Sábado, 12 de Setembro]
+- **Integrantes:**
+  - [NOME COMPLETO 1] – Matrícula: [MATRÍCULA 1]
+  - [NOME COMPLETO 2] – Matrícula: [MATRÍCULA 2]
+  - [NOME COMPLETO 3] – Matrícula: [MATRÍCULA 3]
+- **Professor(a):** [NOME DO PROFESSOR]
+- **Data da Entrega:** 12 de Setembro de 2026
 
 ---
 
@@ -442,18 +432,3 @@ Uso acadêmico. Consulte o arquivo `LICENSE` para mais informações.
 - [Hugging Face Trainer](https://huggingface.co/docs/transformers/main_classes/trainer)
 - [Streamlit Docs](https://docs.streamlit.io/)
 - [PyTorch CUDA semantics](https://pytorch.org/docs/stable/notes/cuda.html)
-
----
-
-## 🔑 Resumo das mudanças
-
-**O que foi removido:**
-- Toda a seção **Docker** (Dockerfile, docker-compose, `.dockerignore`, comandos `docker compose`, verificação pós-build, tabela de erros Docker).
-- Duplicação de dependências (o `requirements.txt` aparecia como bloco separado e dentro do texto).
-
-**O que foi adicionado/melhorado:**
-- Seção **`requirements.txt` + `requirements-dev.txt`** com conteúdo sugerido e comando único de instalação.
-- Bloco sobre instalação de `torch` (CPU vs CUDA) mais visível.
-- Troubleshooting enxugado (removidas entradas específicas de Docker).
-- Estrutura do projeto sem `Dockerfile`/`docker-compose.yml`/`.dockerignore`.
-- Referências mantidas, seção “Próximos Passos” encurtada, formatação de tabelas padronizada.
