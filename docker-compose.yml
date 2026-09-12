@@ -1,11 +1,30 @@
 services:
   vitalia:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: vitalia:latest
+    container_name: vitalia
+
     ports:
       - "7860:7860"
+
     volumes:
       - ./app:/app/app
+      - ./model:/app/model
+      - ./config.yaml:/app/config.yaml:ro
+      # Cache do Hugging Face — persiste o gpt2-small-portuguese
+      - hf-cache:/root/.cache/huggingface
+      # (opcional) cache do uv entre rebuilds — remova em produção
+      - uv-cache:/root/.cache/uv
+
     environment:
-      - STREAMLIT_SERVER_HEADLESS=true 
-      - STREAMLIT_SERVER_RUN_ON_SAVE=false 
-  
+      - STREAMLIT_SERVER_HEADLESS=true
+      - STREAMLIT_SERVER_RUN_ON_SAVE=false
+      - STREAMLIT_SERVER_PORT=7860
+
+    restart: unless-stopped
+
+volumes:
+  hf-cache:
+  uv-cache:

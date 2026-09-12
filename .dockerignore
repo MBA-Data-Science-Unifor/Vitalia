@@ -1,62 +1,48 @@
-# ==============================
-# CONTROLE DE VERSÃO
-# ==============================
+# ============================================================
+# Whitelist
+# ============================================================
+*
+
+# ============================================================
+# Libera só o necessário
+# ============================================================
+!app/
+!app/**
+!model/
+!model/**
+!config.yaml
+!pyproject.toml
+!uv.lock
+
+# ============================================================
+# Nunca copiar
+# ============================================================
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/.ipynb_checkpoints/
+**/.DS_Store
+**/Thumbs.db
+**/.venv/
+
+# Secrets e estado do app
+.streamlit/secrets.toml
+app/chat_history.json
+
+# Meta do projeto
+README.md
+LICENSE
 .git/
 .gitignore
+.dockerignore
+Dockerfile
+docker-compose.yml
+docker-compose.override.yml
 
-# ==============================
-# PYTHON (CACHE E AMBIENTE VIRTUAL)
-# ==============================
-__pycache__/
-*.pyc
-*.pyo
-venv/
-.venv/
-env/
-*.egg-info/
-
-# ==============================
-# MODELOS TREINADOS (NÃO ENVIAR PARA A IMAGEM)
-# ==============================
-# O modelo será gerado DENTRO do container durante o treino.
-# Não faz sentido enviar pesos pré-treinados na imagem.
-trained_model/
-*.pt
-*.pth
-*.bin
-*.safetensors
-
-# ==============================
-# ANÁLISES E APRESENTAÇÃO (NÃO NECESSÁRIOS PARA RODAR O APP)
-# ==============================
-# Essas pastas existem apenas na branch 'analysis' e são
-# usadas para documentação, não para execução do código.
+# Pastas que não entram na imagem
 analysis/
 presentation/
-
-# ==============================
-# IDEs E SISTEMA OPERACIONAL
-# ==============================
-.vscode/
-.idea/
-.DS_Store
-Thumbs.db
-
-# ==============================
-# LOGS E ARQUIVOS TEMPORÁRIOS
-# ==============================
-*.log
-*.tmp
-*.temp
-
-# ==============================
-# AMBIENTE LOCAL (NÃO COPIAR)
-# ==============================
-.env
-.venv
-
-# ==============================
-# NOTEBOOKS E CHECKPOINTS
-# ==============================
-.ipynb_checkpoints/
-*.ipynb

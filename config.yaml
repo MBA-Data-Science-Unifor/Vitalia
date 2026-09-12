@@ -1,47 +1,60 @@
 # ============================================================
-# CONFIGURAÇÃO PRINCIPAL DO TREINO LoRA - Vitalia
+# CONFIGURAÇÃO — Vitalia
 # ============================================================
 
-# --- Parâmetros de treino ---
-epochs: 10                        # Número de épocas (early stopping pode interromper antes)
-learning_rate: 0.0001             # Taxa de aprendizado do AdamW (1e-4)
-batch_size: 4                     # Exemplos por lote
-max_length: 256                   # Comprimento máximo de tokenização (captura respostas completas)
-weight_decay: 0.01                # Regularização L2 (evita overfitting)
-label_smoothing: 0.0              # 0.0 = CrossEntropy padrão (igual ao treino manual que deu certo)
+base_model: "pierreguillou/gpt2-small-portuguese"
 
-# --- Parâmetros LoRA ---
-lora_r: 4                         # Rank das matrizes (baixo → menos overfitting)
-lora_alpha: 8                     # Fator de escala (geralmente 2×r)
-lora_dropout: 0.1                 # Dropout nas matrizes LoRA (regularização)
-lora_target_modules: ['c_attn']   # Camadas de atenção do GPT-2 (Conv1D)
+models:
+  Ruim:  "model/modelo_ruim/epoca_1"
+  Bom:   "model/modelo_bom/epoca_5"
+  Ótimo: "model/modelo_otimo/epoca_10"
 
-# --- Dados ---
-data_path: ..//saude.jsonl         # Caminho para o dataset (relativo ao notebook)
-validation_split: 0.20            # 20% para validação (240 exemplos)
-seed: 42                          # Semente para reprodutibilidade
+model_epochs:
+  Ruim:  1
+  Bom:   5
+  Ótimo: 10
 
-# --- Saída ---
-output_dir: modelo_lora_trainer   # Pasta onde o modelo treinado será salvo
+default_model: "Bom"
 
-# --- Parâmetros de geração (inferência) ---
+# IDÊNTICO ao formatar() do notebook
+prompt_template: |
+  ### Pergunta:
+  {instruction}
+
+  ### Resposta:
+
+# Defaults — espelham o bloco generation: do notebook
 generation:
-  max_new_tokens: 70              # Tamanho máximo da resposta (curta e direta)
-  do_sample: false                # Modo guloso (determinístico) – evita alucinações
-  num_beams: 4                    # Beam Search – explora múltiplos caminhos
-  repetition_penalty: 2.2         # Penaliza repetições (evita loops)
-  no_repeat_ngram_size: 4         # Impede repetição de 4-gramas
+  max_new_tokens: 70
+  do_sample: false
+  num_beams: 4
+  repetition_penalty: 2.2
+  no_repeat_ngram_size: 4
+  temperature: 0.7
+  top_p: 0.9
+  top_k: 50
+  length_penalty: 1.0
+  early_stopping: false
+  seed: 42
+  cut_first_sentence: true   # notebook cortava na 1ª frase
 
-# --- Early Stopping ---
-early_stopping_patience: 3        # Interrompe após 3 épocas sem melhora
-early_stopping_threshold: 0.001   # Melhora mínima exigida (1e-3)
-
-# --- Comparação de épocas (pior / bom / melhor) ---
-# Escolhidas com base na análise das curvas de val_loss do treino:
-#   pior    → época 1  (val_loss 2.807, underfitting)
-#   bom     → época 5  (val_loss 2.412, 94% do ganho total)
-#   melhor  → época 10 (val_loss 2.385, menor val_loss observada)
-comparacao_epocas:
-  pior: 1
-  bom: 5
-  melhor: 10
+training_reference:
+  epochs: 10
+  learning_rate: 0.0001
+  batch_size: 4
+  max_length: 256
+  weight_decay: 0.01
+  label_smoothing: 0.0
+  lora_r: 4
+  lora_alpha: 8
+  lora_dropout: 0.1
+  lora_target_modules: ['c_attn']
+  data_path: "saude.jsonl"
+  validation_split: 0.20
+  seed: 42
+  early_stopping_patience: 3
+  early_stopping_threshold: 0.001
+  comparacao_epocas:
+    Ruim: 1
+    Bom: 5
+    Ótimo: 10
