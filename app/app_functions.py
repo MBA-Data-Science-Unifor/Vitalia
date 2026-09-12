@@ -1,18 +1,18 @@
 """
 Funções auxiliares do app Vitalia.
 
-Espelha a lógica do notebook model_2.ipynb e adiciona parâmetros
-extras para controle fino da geração.
+Espelha a lógica do notebook model_2.ipynb, com parâmetros de geração estendidos:
+- carregar_modelo()  →  load_model()
+- carregar_epoca()   →  load_model() com adapter_path de época
+- responder()        →  respond()
 """
 from functools import lru_cache
 from pathlib import Path
 import hashlib
 import json
 import logging
-import random
 import re
 
-import numpy as np
 import torch
 import yaml
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -45,11 +45,13 @@ PROJECT_ROOT = CONFIG_PATH.parent
 # Config
 # ============================================================
 def load_config() -> dict:
+    """Carrega o config.yaml da raiz do projeto."""
     with CONFIG_PATH.open("r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 
 def resolve_path(rel_path: str) -> str:
+    """Converte caminho relativo (do config) em absoluto."""
     p = Path(rel_path)
     return str(p if p.is_absolute() else PROJECT_ROOT / p)
 
@@ -58,6 +60,7 @@ def resolve_path(rel_path: str) -> str:
 # Device / dtype
 # ============================================================
 def _resolve_device():
+    """Retorna (device, dtype) — cuda+fp16 se disponível, senão cpu+fp32."""
     if torch.cuda.is_available():
         return "cuda", torch.float16
     return "cpu", torch.float32
@@ -67,6 +70,10 @@ def _resolve_device():
 # Fingerprint do adaptador
 # ============================================================
 def adapter_fingerprint(model) -> str:
+    """
+    Hash curto dos pesos LoRA. Épocas diferentes do mesmo treino
+    geram fingerprints DIFERENTES — prova de que o modelo foi trocado.
+    """
     h = hashlib.md5()
     n_tensors = 0
     for name, param in sorted(model.named_parameters()):
@@ -79,10 +86,23 @@ def adapter_fingerprint(model) -> str:
 
 
 # ============================================================
-# Carregamento de modelo
+# Carregamento do modelo
 # ============================================================
 @lru_cache(maxsize=3)
 def load_model(model_key: str, adapter_path: str, base_name: str):
+    """
+    Carrega e cacheia base + adaptador LoRA.
+
+    Parameters
+    ----------
+    model_key     : rótulo lógico ("Ruim", "Bom", "Ótimo") — só chave de cache.
+    adapter_path  : caminho da pasta do adaptador (com adapter_config.json).
+    base_name     : nome do modelo base no HF Hub.
+
+    Returns
+    -------
+    (model, tokenizer, device)
+    """
     adapter = Path(adapter_path)
 
     logger.info("=" * 64)
@@ -90,6 +110,7 @@ def load_model(model_key: str, adapter_path: str, base_name: str):
     logger.info("  adapter_path : %s", adapter)
     logger.info("  base_name    : %s", base_name)
 
+    # ---- validações amigáveis ----
     if not adapter.exists():
         raise FileNotFoundError(
             f"❌ Pasta do adaptador não existe:\n   {adapter}\n\n"
@@ -109,6 +130,7 @@ def load_model(model_key: str, adapter_path: str, base_name: str):
             f"   nem em nenhuma subpasta."
         )
 
+    # ---- lê o adapter_config.json para logar ----
     try:
         with (adapter / "adapter_config.json").open("r", encoding="utf-8") as f:
             acfg = json.load(f)
@@ -126,6 +148,7 @@ def load_model(model_key: str, adapter_path: str, base_name: str):
     except Exception as e:
         logger.warning("  não foi possível ler adapter_config.json: %s", e)
 
+    # ---- carrega base + adaptador ----
     device, dtype = _resolve_device()
     logger.info("  device=%s  dtype=%s", device, dtype)
 
@@ -138,6 +161,7 @@ def load_model(model_key: str, adapter_path: str, base_name: str):
     model.to(device)
     model.eval()
 
+    # ---- validação: o LoRA foi aplicado? ----
     n_lora = sum(1 for n, _ in model.named_parameters() if "lora_" in n)
     if n_lora == 0:
         logger.error("  ⚠️  NENHUM parâmetro lora_* encontrado!")
@@ -152,11 +176,13 @@ def load_model(model_key: str, adapter_path: str, base_name: str):
 
 
 def reload_models():
+    """Limpa o cache de modelos. Útil após editar config ou adaptadores."""
     logger.info("♻️  reload_models(): cache limpo")
     load_model.cache_clear()
 
 
 def cached_models_info() -> list[dict]:
+    """Lista o que está em memória (para o painel de debug)."""
     info = []
     cache = getattr(load_model, "cache", None)
     if cache is None:
@@ -164,11 +190,11 @@ def cached_models_info() -> list[dict]:
     try:
         for (mk, ap, bn), (model, _tok, dev) in cache.items():
             info.append({
-                "key":          mk,
+                "key":         mk,
                 "adapter_path": ap,
-                "base_name":    bn,
-                "device":       str(dev),
-                "fingerprint":  adapter_fingerprint(model),
+                "base_name":   bn,
+                "device":      str(dev),
+                "fingerprint": adapter_fingerprint(model),
             })
     except Exception:
         pass
@@ -186,75 +212,89 @@ def respond(
     *,
     context: str = "",
     prompt_template: str = "### Pergunta:\n{instruction}\n\n### Resposta:\n",
-    # --- parâmetros principais ---
+    # --- tamanho ---
+    min_new_tokens: int = 1,
     max_new_tokens: int = 70,
+    length_penalty: float = 1.0,
+    # --- decodificação ---
     do_sample: bool = False,
     num_beams: int = 4,
-    repetition_penalty: float = 2.2,
-    no_repeat_ngram_size: int = 4,
+    early_stopping: bool = False,
+    num_return_sequences: int = 1,
+    # --- amostragem ---
     temperature: float = 0.7,
     top_p: float = 0.9,
-    # --- parâmetros extras ---
-    top_k: int = 50,
-    length_penalty: float = 1.0,
-    early_stopping: bool = False,
-    seed: int | None = None,
-    cut_first_sentence: bool = True,
+    top_k: int = 0,
+    # --- anti-repetição ---
+    repetition_penalty: float = 2.2,
+    no_repeat_ngram_size: int = 4,
 ) -> str:
-    """Gera uma resposta com os parâmetros configurados."""
+    """
+    Gera uma resposta.
 
-    # ---------- reprodutibilidade ----------
-    if seed is not None:
-        random.seed(int(seed))
-        torch.manual_seed(int(seed))
-        if torch.cuda.is_available():
-            torch.cuda.manual_seed_all(int(seed))
-        np.random.seed(int(seed))
+    Retorna somente a primeira sequência gerada, cortada na
+    primeira frase completa (terminada em '.', '!' ou '?').
+    """
 
-    # ---------- prompt ----------
+    # ---- validações defensivas ----
+    if min_new_tokens > max_new_tokens:
+        logger.warning(
+            "min_new_tokens (%d) > max_new_tokens (%d) — usando min=1",
+            min_new_tokens, max_new_tokens,
+        )
+        min_new_tokens = 1
+
+    if num_return_sequences > 1 and not do_sample and num_beams == 1:
+        logger.warning(
+            "num_return_sequences>1 exige do_sample=True ou num_beams>1. "
+            "Reduzindo para 1."
+        )
+        num_return_sequences = 1
+
+    # ---- prompt ----
     prefixo = f"### Contexto:\n{context}\n\n" if context.strip() else ""
     prompt  = prefixo + prompt_template.format(instruction=instruction)
 
-    logger.info("respond(): prompt >>>\n%s\n<<< (fim)", prompt)
+    logger.info("respond(): prompt >>>\n%s\n<<< (fim do prompt)", prompt)
     logger.info(
-        "respond(): max_new_tokens=%s do_sample=%s num_beams=%s "
-        "rep_pen=%s no_repeat=%s temp=%s top_p=%s top_k=%s "
-        "length_penalty=%s early_stopping=%s seed=%s cut=%s",
-        max_new_tokens, do_sample, num_beams,
-        repetition_penalty, no_repeat_ngram_size,
+        "respond(): min=%s max=%s len_pen=%.2f | sample=%s beams=%s "
+        "early_stop=%s n_ret=%s | temp=%.2f top_p=%.2f top_k=%s | "
+        "rep=%.2f no_rep=%s",
+        min_new_tokens, max_new_tokens, length_penalty,
+        do_sample, num_beams, early_stopping, num_return_sequences,
         temperature, top_p, top_k,
-        length_penalty, early_stopping, seed, cut_first_sentence,
+        repetition_penalty, no_repeat_ngram_size,
     )
 
-    ids = tokenizer(prompt, return_tensors="pt").to(device)
+    # ---- tokeniza ----
+    inputs = tokenizer(prompt, return_tensors="pt").to(device)
 
-    # ---------- kwargs de geração ----------
-    gen_kwargs = {
-        "max_new_tokens":       int(max_new_tokens),
-        "do_sample":            bool(do_sample),
-        "num_beams":            int(num_beams),
-        "repetition_penalty":   float(repetition_penalty),
-        "no_repeat_ngram_size": int(no_repeat_ngram_size),
-        "pad_token_id":         tokenizer.eos_token_id,
-        "eos_token_id":         tokenizer.eos_token_id,
-    }
+    # ---- kwargs de geração ----
+    gen_kwargs = dict(
+        min_new_tokens=int(min_new_tokens),
+        max_new_tokens=int(max_new_tokens),
+        length_penalty=float(length_penalty),
+        do_sample=bool(do_sample),
+        num_beams=int(num_beams),
+        early_stopping=bool(early_stopping),
+        num_return_sequences=int(num_return_sequences),
+        repetition_penalty=float(repetition_penalty),
+        no_repeat_ngram_size=int(no_repeat_ngram_size),
+        pad_token_id=tokenizer.eos_token_id,
+        eos_token_id=tokenizer.eos_token_id,
+    )
 
-    # length_penalty / early_stopping só fazem sentido com beam search
-    if num_beams > 1:
-        gen_kwargs["length_penalty"] = float(length_penalty)
-        gen_kwargs["early_stopping"] = bool(early_stopping)
-
-    # temperature / top_p / top_k só fazem sentido com sampling
     if do_sample:
         gen_kwargs["temperature"] = float(temperature)
         gen_kwargs["top_p"]       = float(top_p)
-        if top_k > 0:
+        if top_k and int(top_k) > 0:
             gen_kwargs["top_k"] = int(top_k)
 
+    # ---- geração ----
     with torch.no_grad():
-        outputs = model.generate(**ids, **gen_kwargs)
+        outputs = model.generate(**inputs, **gen_kwargs)
 
-    # ---------- decodificação ----------
+    # ---- decodifica a primeira sequência ----
     texto = tokenizer.decode(outputs[0], skip_special_tokens=True)
     if "### Resposta:" in texto:
         texto = texto.split("### Resposta:")[-1].strip()
@@ -263,12 +303,9 @@ def respond(
 
     logger.info("respond(): texto bruto = %r", texto)
 
-    # ---------- corte opcional ----------
-    if cut_first_sentence:
-        m = re.search(r"^([^.!?]*[.!?])", texto)
-        resposta = m.group(1).strip() if m else texto
-    else:
-        resposta = texto
+    # ---- corta na primeira frase completa ----
+    m = re.search(r"^([^.!?]*[.!?])", texto)
+    resposta = m.group(1).strip() if m else texto
 
     logger.info("respond(): resposta final = %r", resposta)
     return resposta

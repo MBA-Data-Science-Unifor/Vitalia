@@ -1,61 +1,63 @@
-# syntax=docker/dockerfile:1.7
-# ============================================================
-# Vitalia — imagem usando uv + pyproject.toml
-# ============================================================
-FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS base
+# syntax=docker/dockerfile:1
 
-# ------------------------------------------------------------
-# Env
-# ------------------------------------------------------------
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    # uv: cacheia e respeita uv.lock
-    UV_COMPILE_BYTECODE=1 \
-    UV_LINK_MODE=copy \
-    UV_PYTHON_DOWNLOADS=never \
-    # uv: instala no Python do sistema (imagem single-user)
-    UV_PROJECT_ENVIRONMENT=/usr/local \
-    # Streamlit
-    STREAMLIT_SERVER_HEADLESS=true \
-    STREAMLIT_SERVER_PORT=7860 \
-    STREAMLIT_SERVER_ADDRESS=0.0.0.0 \
-    STREAMLIT_SERVER_RUN_ON_SAVE=false \
-    STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
+# ---------- Estágio 1: Builder ----------
+FROM python:3.12-slim AS builder
 
-# ------------------------------------------------------------
-# Deps do sistema (curl só para o HEALTHCHECK)
-# ------------------------------------------------------------
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        curl \
-    && rm -rf /var/lib/apt/lists/*
+# Instala o uv oficial (gerenciador de pacotes rápido)
+COPY --from=ghcr.io/astral-sh/uv:0.6.11 /uv /uvx /bin/
 
 WORKDIR /app
 
-# ------------------------------------------------------------
-# Camada 1: instala só as dependências (cacheada)
-# Se só mudar código do app, essa camada NÃO é refeita.
-# ------------------------------------------------------------
+# Dependências de sistema necessárias para compilar alguns pacotes Python
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copia APENAS os arquivos de definição de projeto (cache de camadas)
 COPY pyproject.toml uv.lock ./
 
+# Cria venv e instala dependências usando o lock (reprodutível)
 RUN --mount=type=cache,target=/root/.cache/uv \
+    uv venv /opt/venv && \
+    . /opt/venv/bin/activate && \
     uv sync --frozen --no-install-project --no-dev
 
-# ------------------------------------------------------------
-# Camada 2: copia o código do projeto
-# ------------------------------------------------------------
-COPY app/          ./app/
-COPY model/        ./model/
-COPY config.yaml   ./config.yaml
+# Copia o código da aplicação
+COPY . .
 
-# ------------------------------------------------------------
-# Porta + healthcheck
-# ------------------------------------------------------------
-EXPOSE 7860
+# Instala o projeto em si (sem reinstalar dependências)
+RUN . /opt/venv/bin/activate && \
+    uv pip install --no-deps -e .
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
-    CMD curl -fsS http://localhost:7860/_stcore/health || exit 1
+# ---------- Estágio 2: Runtime ----------
+FROM python:3.12-slim
 
-# ------------------------------------------------------------
-# Comando
-# ------------------------------------------------------------
-CMD ["streamlit", "run", "app/app.py"]
+# curl é usado pelo healthcheck do docker-compose
+RUN apt-get update && apt-get install -y --no-install-recommends curl && \
+    rm -rf /var/lib/apt/lists/*
+
+# Usuário não-root
+RUN useradd --create-home --shell /bin/bash appuser
+USER appuser
+WORKDIR /home/appuser/app
+
+# Copia o venv do estágio builder
+COPY --from=builder /opt/venv /opt/venv
+
+# Copia o código
+COPY --from=builder /app/src ./src
+
+# Diretório de cache do HuggingFace (montado como volume no compose)
+RUN mkdir -p /home/appuser/app/.cache/huggingface
+ENV HF_HOME=/home/appuser/app/.cache/huggingface
+ENV TRANSFORMERS_CACHE=/home/appuser/app/.cache/huggingface
+ENV TOKENIZERS_PARALLELISM=false
+ENV PYTHONUNBUFFERED=1
+ENV PATH="/opt/venv/bin:$PATH"
+
+EXPOSE 8501
+
+CMD ["streamlit", "run", "src/app.py", \
+     "--server.address=0.0.0.0", \
+     "--server.port=8501", \
+     "--server.headless=true"]

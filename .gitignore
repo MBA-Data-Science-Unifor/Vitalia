@@ -1,6 +1,4 @@
-# ============================================================
 # Python
-# ============================================================
 __pycache__/
 *.py[cod]
 *$py.class
@@ -16,100 +14,84 @@ lib/
 lib64/
 parts/
 sdist/
+var/
 wheels/
-share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-MANIFEST
 
-# ============================================================
 # Ambientes virtuais
-# ============================================================
 .venv/
 venv/
-ENV/
 env/
-.env
+ENV/
 .python-version
 
-# ============================================================
-# Jupyter
-# ============================================================
-.ipynb_checkpoints/
-*.ipynb_checkpoints/
+# uv
+# NÃO ignore uv.lock — ele DEVE ser versionado para builds reprodutíveis
+# uv.lock
 
-# ============================================================
-# Testes / cobertura / lint / tipagem
-# ============================================================
+# Testes e cobertura
 .pytest_cache/
 .coverage
 .coverage.*
 htmlcov/
 .tox/
 .nox/
-.cache
-nosetests.xml
-coverage.xml
+.hypothesis/
 
+# Lint / tipagem
 .mypy_cache/
 .dmypy.json
+dmypy.json
 .ruff_cache/
 .pytype/
 
-# ============================================================
-# Streamlit
-# ============================================================
-.streamlit/secrets.toml
-
-# Estado do app — histórico e parâmetros editados em runtime
-app/chat_history.json
-app/main_params.json
-
-# ============================================================
-# Notebooks — artefatos gerados
-# ============================================================
-analysis/*.png
-analysis/*.csv
-analysis/resultados_trainer/
-analysis/modelo_lora_trainer/
-analysis/curvas_por_epoca.png
-analysis/lr_evolution.png
-analysis/resumo_pior_bom_melhor.csv
-
-# ============================================================
-# Cache do Hugging Face
-# ============================================================
+# Caches do HuggingFace / modelos
 .cache/
-huggingface/
-transformers_cache/
+.huggingface/
+models/
+checkpoints/
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.ckpt
+*.onnx
 
-# ============================================================
-# Modelos (mantidos no Git — são pequenos ~600 KB cada)
-# Se preferir NÃO versionar, descomente:
-# ============================================================
-# model/
+# Adaptadores LoRA (a menos que você queira versionar os pesos)
+adapters/
+lora_*/
+outputs/
 
-# ============================================================
-# Sistema / IDE
-# ============================================================
+# Segredos / ambiente
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# Logs
+*.log
+logs/
+
+# Docker
+# (deixe Dockerfile e docker-compose versionados)
+
+# IDE / SO
+.vscode/
+.idea/
+*.swp
+*.swo
 .DS_Store
 Thumbs.db
-.idea/
-.vscode/
+desktop.ini
 
-# ============================================================
-# Docker
-# ============================================================
-docker-compose.override.yml
+# Notebooks
+.ipynb_checkpoints/
+*.ipynb
 
-# ============================================================
-# uv
-# ============================================================
-# uv.lock é versionado (garante reprodutibilidade)
-# Se preferir NÃO versionar, descomente:
-# uv.lock
-
-# Cache do uv em dev (criado em .venv por padrão)
-.uv/
-.uv-cache/
+# Streamlit
+.streamlit/secrets.toml
+chat_history.json

@@ -1,48 +1,59 @@
-# ============================================================
-# Whitelist
-# ============================================================
-*
-
-# ============================================================
-# Libera só o necessário
-# ============================================================
-!app/
-!app/**
-!model/
-!model/**
-!config.yaml
-!pyproject.toml
-!uv.lock
-
-# ============================================================
-# Nunca copiar
-# ============================================================
-**/__pycache__/
-**/*.pyc
-**/*.pyo
-**/*.pyd
-**/.pytest_cache/
-**/.mypy_cache/
-**/.ruff_cache/
-**/.ipynb_checkpoints/
-**/.DS_Store
-**/Thumbs.db
-**/.venv/
-
-# Secrets e estado do app
-.streamlit/secrets.toml
-app/chat_history.json
-
-# Meta do projeto
-README.md
-LICENSE
-.git/
+# Git
+.git
 .gitignore
-.dockerignore
+.gitattributes
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Ambiente / segredos
+.env
+.env.*
+*.pem
+*.key
+
+# Docker / Compose
 Dockerfile
 docker-compose.yml
-docker-compose.override.yml
+docker-compose.*.yml
+.dockerignore
 
-# Pastas que não entram na imagem
-analysis/
-presentation/
+# Caches locais (não devem ir pra imagem; use o volume hf_cache)
+.cache/
+.huggingface/
+*.safetensors
+*.bin
+*.pt
+*.ckpt
+
+# IDE / SO
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Docs / notebooks
+README.md
+*.md
+*.ipynb
+notebooks/
+docs/
+
+# Logs
+*.log
+logs/
