@@ -406,19 +406,6 @@ Os checkpoints ficam em `modelo_lora_trainer/epoca_1..10/`. Mova para `model/` c
 
 ---
 
-## 👨‍💻 Créditos
-
-Desenvolvido pelo **Grupo [NÚMERO DO GRUPO]** como projeto final da disciplina **[NOME DA DISCIPLINA]**.
-
-- **Integrantes:**
-  - [NOME COMPLETO 1] – Matrícula: [MATRÍCULA 1]
-  - [NOME COMPLETO 2] – Matrícula: [MATRÍCULA 2]
-  - [NOME COMPLETO 3] – Matrícula: [MATRÍCULA 3]
-- **Professor(a):** [NOME DO PROFESSOR]
-- **Data da Entrega:** 12 de Setembro de 2026
-
----
-
 ## 📄 Licença
 
 Uso acadêmico. Consulte o arquivo `LICENSE` para mais informações.
